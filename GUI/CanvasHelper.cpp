@@ -18,8 +18,6 @@
 #include <QString>
 #include <memory>
 
-// Private class to encapsulate CanvasHelper's internal data (PIMPL, Pointer to Implementation idiom)
-// Outside class can't see or access this class 
 class CanvasPrivate{
     public:
         std::stack<std::vector<std::shared_ptr<MyShape>>> stack;
@@ -197,7 +195,7 @@ void CanvasHelper::removeAllShapes(){
 void CanvasHelper::undoShape(){
 try {
     int lastShapeIndex = static_cast<int>(ShapeManager::getAllShapes().size()) - 1;
-    if (lastShapeIndex <= 0){
+    if (lastShapeIndex < 0){
         showErrorAlert("Undo Error", "No shape to undo.");
         return;
     }

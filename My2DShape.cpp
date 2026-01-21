@@ -39,7 +39,7 @@ void My2DShape::setTopLeftInternal(MyPoint* topLeft) {
     if (*topLeft == *bottomRight) {
         throw std::invalid_argument("Top-Left cannot be the same as Bottom-Right.");
     }
-    topLeft = topLeft;
+    this->topLeft = topLeft;
 }
 
 void My2DShape::setBottomRightInternal(MyPoint* bottomRight) {
@@ -49,7 +49,7 @@ void My2DShape::setBottomRightInternal(MyPoint* bottomRight) {
     if (*topLeft == *bottomRight) {
         throw std::invalid_argument("Bottom-Right cannot be the same as Top-Left.");
     }
-    bottomRight = bottomRight;
+    this->bottomRight = bottomRight;
 }
 
 void My2DShape::setBoundingBoxInternal(MyPoint* topLeft, MyPoint* bottomRight) {
@@ -59,8 +59,8 @@ void My2DShape::setBoundingBoxInternal(MyPoint* topLeft, MyPoint* bottomRight) {
     if (*topLeft == *bottomRight) {
         throw std::invalid_argument("Top-Left and Bottom-Right value cannot be the same.");
     }
-    topLeft = topLeft;
-    bottomRight = bottomRight;
+    this->topLeft = topLeft;
+    this->bottomRight = bottomRight;
 }
 // End of Validators
 

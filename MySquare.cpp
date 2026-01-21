@@ -45,10 +45,6 @@ MySquare::MySquare(MyPoint* topLeft, MyPoint* bottomRight) : My2DShape(topLeft, 
     double width= std::abs(bottomRight->getX() - topLeft->getX());
     double height= std::abs(bottomRight->getY() - topLeft->getY());
 
-    const double epsilon = 1e-12;
-    if (std::fabs(width - height) > epsilon) {
-        throw std::invalid_argument("Width and height must be equal for a square.");
-    }
     this->side = std::min(width, height);
 }
 

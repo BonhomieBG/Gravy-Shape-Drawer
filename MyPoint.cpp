@@ -23,9 +23,7 @@ MyPoint::MyPoint(double x, double y){
     if (std::isnan(x) || std::isnan(y) || !std::isfinite(x) || !std::isfinite(y)) {
         throw InvalidCoordinateException("Coordinates must be valid and cannot be NaN or Infinite.");
     }
-    if (x < 0 || y < 0) {
-        throw InvalidCoordinateException("Coordinates cannot be negative.");
-    }
+    // Note: Negative coordinates are allowed for graphics contexts
     x_ = x;
     y_ = y;
 }
@@ -42,9 +40,7 @@ void MyPoint::setX(double x){
     if (std::isnan(x) || !std::isfinite(x)) {
         throw InvalidCoordinateException("X coordinate must be valid and cannot be NaN or Infinite.");
     }
-    if (x < 0) {
-        throw InvalidCoordinateException("X coordinate cannot be negative.");
-    }
+    // Note: Negative coordinates are allowed for graphics contexts
     x_ = x;
 }
 
@@ -52,9 +48,7 @@ void MyPoint::setY(double y){
     if (std::isnan(y) || !std::isfinite(y)) {
         throw InvalidCoordinateException("Y coordinate must be valid and cannot be NaN or Infinite.");
     }
-    if (y < 0) {
-        throw InvalidCoordinateException("Y coordinate cannot be negative.");
-    }
+    // Note: Negative coordinates are allowed for graphics contexts
     y_ = y;
 }
 

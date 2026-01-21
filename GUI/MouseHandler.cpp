@@ -105,7 +105,7 @@ class MouseHandlerPrivate{
             }
         };
 
-        const void finalizeCustomDrawing(){
+        void finalizeCustomDrawing(){
             if (clickedPoints->size() <2){
                 resetDrawing();
                 customDrawing = false;
@@ -146,7 +146,7 @@ class MouseHandlerPrivate{
             customDrawing = false;
         };
 
-        const void createShape() const{
+        void createShape() const{
             try{
                 if (currentShape == "LINE"){
                     canvas->AutoCreateLineFromPoints(clickedPoints->at(0), clickedPoints->at(1));
@@ -258,12 +258,12 @@ class MouseHandlerPrivate{
             currentShape = shape;
         }
 
-        std::string* setShapePtr(const std::string* shape){
-            if (shape) currentShape = *shape;
+std::string* setShapePtr(const std::string& shape){
+            currentShape = shape;
             return &currentShape;
         }
 
-        const void resetDrawing() {
+        void resetDrawing() {
             clickedPoints->clear();
 
             // remove visual points from scene
@@ -308,17 +308,21 @@ std::string* MouseHandler::getCurrentShapeType() const{
 
 void MouseHandler::cancelCurrentDrawing() const{
     mouseHandlerPrivate->resetDrawing();
-    shapePtr->clear();
+    if (shapePtr) {
+        shapePtr->clear();
+    }
 }
 
 void MouseHandler::setShapeType(std::string shapeType) {
     try {
-        shapeType=toUpperCase(shapeType);
+        shapeType = toUpperCase(shapeType);
         if (shapeType != "LINE" && shapeType != "RECTANGLE" && shapeType != "SQUARE" &&
            shapeType != "CIRCLE" && shapeType != "TRIANGLE" && !shapeType.empty()) {
            showErrorAlert("Error", "Unsupported Shape Type");
+           return;
        }
-       this->shapePtr = mouseHandlerPrivate->setShapePtr(&shapeType);
+       mouseHandlerPrivate->setCurrentShape(shapeType);
+       this->shapePtr = mouseHandlerPrivate->getShapePtr();
     }
     catch (const std::exception& e) {
         showErrorAlert("Error", e.what());
@@ -358,8 +362,8 @@ void MouseHandler::handler(QGraphicsSceneMouseEvent* event){
                 std::string shapeType = currentShape->NametoUpper();
                 
                 if (shapeType == "CIRCLE"){
-                    std::unique_ptr<MyCircle> circle = std::make_unique<MyCircle>(*(dynamic_cast<MyCircle*>(currentShape.get())));
-                    if (mouseHandlerPrivate->isInsideCircle(currentX, currentY, *circle)){
+                    MyCircle* circle = dynamic_cast<MyCircle*>(currentShape.get());
+                    if (circle && mouseHandlerPrivate->isInsideCircle(currentX, currentY, *circle)){
                         std::ostringstream info;
                         info.precision(2);
                         info << std::fixed << "Radius= " << circle->getRadius() 
@@ -369,35 +373,35 @@ void MouseHandler::handler(QGraphicsSceneMouseEvent* event){
                         break;
                     }
                 }
-                if (shapeType == "RECTANGLE"){
-                    std::unique_ptr<MyRectangle> rectangle = std::make_unique<MyRectangle>(*(dynamic_cast<MyRectangle*>(currentShape.get())));
-                    rectangle.get();
-                    if (mouseHandlerPrivate->isInsideRectangle(currentX, currentY, *rectangle)){
+                else if (shapeType == "RECTANGLE"){
+                    MyRectangle* rectangle = dynamic_cast<MyRectangle*>(currentShape.get());
+                    if (rectangle && mouseHandlerPrivate->isInsideRectangle(currentX, currentY, *rectangle)){
                         std::ostringstream info;
                         info.precision(2);
-                        info << std::fixed << "Height= " << rectangle->getHeight() 
-                             << " | Width= " << rectangle->getWidth() 
+                        info << std::fixed << "Width= " << rectangle->getWidth()
+                             << " | Height= " << rectangle->getHeight() 
                              << " | Area= " << rectangle->calculateArea() 
                              << " | Perimeter= " << rectangle->calculatePerimeter();
                         coordinatePreview->setText(QString::fromStdString(info.str()));
                         break;
                     }
                 }
-                if (shapeType == "SQUARE"){
-                    std::unique_ptr<MySquare> square = std::make_unique<MySquare>(*(dynamic_cast<MySquare*>(currentShape.get())));
-                    if (mouseHandlerPrivate->isInsideSquare(currentX, currentY, *square)){
+                else if (shapeType == "SQUARE"){
+                    MySquare* square = dynamic_cast<MySquare*>(currentShape.get());
+                    if (square && mouseHandlerPrivate->isInsideSquare(currentX, currentY, *square)){
                         std::ostringstream info;
                         info.precision(2);
-                        info << std::fixed << "Side= " << square->getSide() 
+                        info << std::fixed << "Width= " << square->getSide() 
+                             << " | Height= " << square->getSide()
                              << " | Area= " << square->calculateArea() 
                              << " | Perimeter= " << square->calculatePerimeter();
                         coordinatePreview->setText(QString::fromStdString(info.str()));
                         break;
                     }
                 }
-                if (shapeType == "TRIANGLE"){
-                    std::unique_ptr<MyTriangle> triangle = std::make_unique<MyTriangle>(*(dynamic_cast<MyTriangle*>(currentShape.get())));
-                    if (mouseHandlerPrivate->isInsideTriangle(currentX, currentY, *triangle)){
+                else if (shapeType == "TRIANGLE"){
+                    MyTriangle* triangle = dynamic_cast<MyTriangle*>(currentShape.get());
+                    if (triangle && mouseHandlerPrivate->isInsideTriangle(currentX, currentY, *triangle)){
                         std::ostringstream info;
                         info.precision(2);
                         info << std::fixed << "Sides= " << triangle->getSide1() << ", " << triangle->getSide2() << ", " << triangle->getSide3()
@@ -407,9 +411,9 @@ void MouseHandler::handler(QGraphicsSceneMouseEvent* event){
                         break;
                     }
                 }
-                if (shapeType == "LINE"){
-                    std::unique_ptr<MyLine> line = std::make_unique<MyLine>(*(dynamic_cast<MyLine*>(currentShape.get())));
-                    if (mouseHandlerPrivate->isNearLine(currentX, currentY, *line)){
+                else if (shapeType == "LINE"){
+                    MyLine* line = dynamic_cast<MyLine*>(currentShape.get());
+                    if (line && mouseHandlerPrivate->isNearLine(currentX, currentY, *line)){
                         std::ostringstream info;
                         info.precision(2);
                         info << std::fixed << "Length= " << line->calculateLength();

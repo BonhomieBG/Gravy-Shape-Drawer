@@ -127,6 +127,11 @@ class GUIPrivate{
         }
         gridItems.clear();
     };
+    
+    // Call this after scene->clear() to just reset the vector without deleting
+    void resetGridAfterSceneClear(){
+        gridItems.clear();
+    };
 
     // use 2D array for realitic color tracking
     inline static std::string colors[4][4] = {
@@ -458,21 +463,192 @@ void GUIHandler::start(){
 
     // Connect menu actions to slots
     connect(newDrawingAction, &QAction::triggered, [this]() {
-        // Clear all shapes
+        // Clear all shapes (this also clears grid via scene->clear())
         m_canvas->clearCanvas(m_gv.get());
+        
+        // Reset grid items vector since scene->clear() already deleted them
+        m_guiPrivate->resetGridAfterSceneClear();
+        
+        // Redraw the checkerboard grid
+        QSize viewSize = m_gv->viewport()->size();
+        m_guiPrivate->CheckerGrid(mouseHandler.get(), viewSize.width(), viewSize.height(), 20);
+        
         m_guiPrivate->updatePropertyPanel();
     });
 
+    /*
     // Save
     connect(saveAction, &QAction::triggered, [this]() {
+        QString fileName = QFileDialog::getSaveFileName(this, "Save Drawing", "drawing.json", "JSON Files (*.json);;All Files (*)");
+        if (fileName.isEmpty()) return;
         
+        try {
+            QJsonObject root;
+            root["version"] = "1.0";
+            
+            // Save shapes
+            QJsonArray shapesArray;
+            for (const auto& shape : m_canvas->getAllShapes()) {
+                QJsonObject obj;
+                obj["type"] = QString::fromStdString(shape->getName());
+                obj["fillColor"] = QString::fromStdString(shape->getFillColor());
+                obj["strokeColor"] = QString::fromStdString(shape->getStrokeColor());
+                obj["filled"] = shape->getFillStatus();
+                obj["stroked"] = shape->getStrokeStatus();
+                obj["lineWidth"] = shape->getGridLineWidth();
+                
+                QString type = QString::fromStdString(shape->getName());
+                if (type == "Line") {
+                    auto* line = dynamic_cast<MyLine*>(shape.get());
+                    obj["x1"] = QJsonValue(line->getStartPoint()->getX());
+                    obj["y1"] = QJsonValue(line->getStartPoint()->getY());
+                    obj["x2"] = QJsonValue(line->getEndPoint()->getX());
+                    obj["y2"] = QJsonValue(line->getEndPoint()->getY());
+                } else if (type == "Circle") {
+                    auto* circle = dynamic_cast<MyCircle*>(shape.get());
+                    obj["centerX"] = QJsonValue(circle->getCenter()->getX());
+                    obj["centerY"] = QJsonValue(circle->getCenter()->getY());
+                    obj["radius"] = QJsonValue(circle->getRadius());
+                } else if (type == "Square") {
+                    auto* square = dynamic_cast<MySquare*>(shape.get());
+                    obj["topLeftX"] = QJsonValue(square->getTopLeft()->getX());
+                    obj["topLeftY"] = QJsonValue(square->getTopLeft()->getY());
+                    obj["side"] = QJsonValue(square->getSide());
+                } else if (type == "Rectangle") {
+                    auto* rect = dynamic_cast<MyRectangle*>(shape.get());
+                    obj["topLeftX"] = QJsonValue(rect->getTopLeft()->getX());
+                    obj["topLeftY"] = QJsonValue(rect->getTopLeft()->getY());
+                    obj["width"] = QJsonValue(rect->getWidth());
+                    obj["height"] = QJsonValue(rect->getHeight());
+                } else if (type == "Triangle") {
+                    auto* tri = dynamic_cast<MyTriangle*>(shape.get());
+                    obj["x1"] = QJsonValue(tri->getPoint1()->getX());
+                    obj["y1"] = QJsonValue(tri->getPoint1()->getY());
+                    obj["x2"] = QJsonValue(tri->getPoint2()->getX());
+                    obj["y2"] = QJsonValue(tri->getPoint2()->getY());
+                    obj["x3"] = QJsonValue(tri->getPoint3()->getX());
+                    obj["y3"] = QJsonValue(tri->getPoint3()->getY());
+                }
+                shapesArray.append(obj);
+            }
+            root["shapes"] = shapesArray;
+            
+            // Save settings (like Java version)
+            root["isFilled"] = isFilled;
+            root["useGradient"] = ColorPicker::isUseGradient();
+            root["gradientDirection"] = QString::fromStdString(ColorPicker::gradientDirection);
+            root["userStrokeColor"] = QString::fromStdString(userStrokeColor);
+            root["userFillColor"] = QString::fromStdString(userFillColor);
+            root["startGradient"] = QString::fromStdString(startGradient);
+            root["endGradient"] = QString::fromStdString(endGradient);
+            root["gridLine"] = gridLine;
+            
+            QFile file(fileName);
+            if (!file.open(QIODevice::WriteOnly)) {
+                showErrorAlert("Save Error", "Could not open file for writing.");
+                return;
+            }
+            QJsonDocument saveDoc(root);
+            file.write(saveDoc.toJson(QJsonDocument::Indented));
+            file.close();
+            showInfoAlert("Save Successful", "Drawing saved successfully!");
+        } catch (std::exception& e) {
+            showErrorAlert("Save Error", e.what());
+        }
     });
+    \*
 
     // Load
-    connect(loadAction, &QAction::triggered, [this]() {
+    /*connect(loadAction, &QAction::triggered, [this]() {
+        QString fileName = QFileDialog::getOpenFileName(this, "Load Drawing", "", "JSON Files (*.json);;All Files (*)");
+        if (fileName.isEmpty()) return;
         
+        try {
+            QFile file(fileName);
+            if (!file.open(QIODevice::ReadOnly)) {
+                showErrorAlert("Load Error", "Could not open file for reading.");
+                return;
+            }
+            
+            QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+            file.close();
+            
+            if (!doc.isObject()) {
+                showErrorAlert("Load Error", "Invalid file format.");
+                return;
+            }
+            
+            QJsonObject root = doc.object();
+            
+            // Clear canvas first (this removes everything including grid)
+            m_canvas->clearCanvas(m_gv.get());
+            m_guiPrivate->resetGridAfterSceneClear();
+            
+            // Redraw grid first before loading shapes
+            QSize viewSize = m_gv->viewport()->size();
+            m_guiPrivate->CheckerGrid(mouseHandler.get(), viewSize.width(), viewSize.height(), 20);
+            
+            // Load shapes
+            QJsonArray shapesArray = root["shapes"].toArray();
+            for (const auto& val : shapesArray) {
+                QJsonObject obj = val.toObject();
+                QString type = obj["type"].toString();
+                std::string fill = obj["fillColor"].toString().toStdString();
+                std::string stroke = obj["strokeColor"].toString().toStdString();
+                
+                std::shared_ptr<MyShape> shape;
+                
+                if (type == "Line") {
+                    auto p1 = std::make_shared<MyPoint>(obj["x1"].toDouble(), obj["y1"].toDouble());
+                    auto p2 = std::make_shared<MyPoint>(obj["x2"].toDouble(), obj["y2"].toDouble());
+                    shape = std::make_shared<MyLine>(p1.get(), p2.get());
+                } else if (type == "Circle") {
+                    auto c = std::make_shared<MyPoint>(obj["centerX"].toDouble(), obj["centerY"].toDouble());
+                    shape = std::make_shared<MyCircle>(c.get(), obj["radius"].toDouble());
+                } else if (type == "Square") {
+                    auto tl = std::make_shared<MyPoint>(obj["topLeftX"].toDouble(), obj["topLeftY"].toDouble());
+                    shape = std::make_shared<MySquare>(tl.get(), obj["side"].toDouble());
+                } else if (type == "Rectangle") {
+                    auto tl = std::make_shared<MyPoint>(obj["topLeftX"].toDouble(), obj["topLeftY"].toDouble());
+                    shape = std::make_shared<MyRectangle>(tl.get(), obj["width"].toDouble(), obj["height"].toDouble());
+                } else if (type == "Triangle") {
+                    auto p1 = std::make_shared<MyPoint>(obj["x1"].toDouble(), obj["y1"].toDouble());
+                    auto p2 = std::make_shared<MyPoint>(obj["x2"].toDouble(), obj["y2"].toDouble());
+                    auto p3 = std::make_shared<MyPoint>(obj["x3"].toDouble(), obj["y3"].toDouble());
+                    shape = std::make_shared<MyTriangle>(p1.get(), p2.get(), p3.get());
+                }
+                
+                if (shape) {
+                    shape->ChangeFilledStatus(obj["filled"].toBool());
+                    shape->ChangeStrokedStatus(obj["stroked"].toBool());
+                    if (!fill.empty() && fill != "transparent") shape->setFillColor(&fill);
+                    if (!stroke.empty()) shape->setStrokeColor(&stroke);
+                    shape->setGridLineWidth(obj["lineWidth"].toDouble());
+                    m_canvas->addShape(shape);
+                }
+            }
+            
+            // Load settings (same order as save, like Java version)
+            isFilled = root["isFilled"].toBool();
+            ColorPicker::setUseGradient(root["useGradient"].toBool());
+            ColorPicker::gradientDirection = root["gradientDirection"].toString().toStdString();
+            userStrokeColor = root["userStrokeColor"].toString().toStdString();
+            userFillColor = root["userFillColor"].toString().toStdString();
+            startGradient = root["startGradient"].toString().toStdString();
+            endGradient = root["endGradient"].toString().toStdString();
+            gridLine = root["gridLine"].toDouble();
+            
+            // Force scene update to ensure all shapes are visible
+            mouseHandler->update();
+            m_gv->viewport()->update();
+            
+            m_guiPrivate->updatePropertyPanel();
+            showInfoAlert("Load Successful", "Drawing loaded successfully!");
+        } catch (std::exception& e) {
+            showErrorAlert("Load Error", e.what());
+        }
     });
-
+    */
 
     connect(exitAction, &QAction::triggered, [this]() {
         QApplication::quit();

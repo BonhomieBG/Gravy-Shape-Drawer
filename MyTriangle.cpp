@@ -71,7 +71,11 @@ class MyTrianglePrivate{
 };
 
 MyTriangle::MyTriangle(MyPoint* p1, MyPoint *p2, MyPoint* p3)
-    : My2DShape(new MyPoint(0, 0), new MyPoint(0, 0)),
+    : My2DShape(
+        new MyPoint(std::min({p1->getX(), p2->getX(), p3->getX()}), 
+                    std::min({p1->getY(), p2->getY(), p3->getY()})),
+        new MyPoint(std::max({p1->getX(), p2->getX(), p3->getX()}), 
+                    std::max({p1->getY(), p2->getY(), p3->getY()}))),
       trianglePr(new MyTrianglePrivate())
 {
     // Initialize points first

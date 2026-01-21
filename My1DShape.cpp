@@ -51,11 +51,11 @@ bool My1DShape::operator==(const My1DShape& other) const {
 }
 
 My1DShape* My1DShape::max(My1DShape* o1, My1DShape* o2) const {
-    if (o1 == nullptr || o2 == nullptr) {
-        throw InvalidCoordinateException("Both shape can't be null.");
+    if (o1 == nullptr && o2 == nullptr) {
+        throw InvalidCoordinateException("Both shapes can't be null.");
     }
-    if (o1 == nullptr) return (o2);
-    if (o2 == nullptr) return (o1);
+    if (o1 == nullptr) return o2;
+    if (o2 == nullptr) return o1;
     return (o1->compareTo(*o2)>=0)? o1:o2;
 }
 

@@ -103,11 +103,10 @@ void ShapeManager::findMax2DShape() const {
     if (maxShape){
         std::ostringstream oss;
         oss.precision(2);
-        oss<< "Shape: %s | Area= %f | Perimeter= %f | Shape Number: %d",
-            maxShape->getName(),
-            maxShape->calculateArea(),
-            maxShape->calculatePerimeter();
-            count;
+        oss << "Shape: " << maxShape->getName() 
+            << " | Area= " << std::fixed << maxShape->calculateArea()
+            << " | Perimeter= " << maxShape->calculatePerimeter()
+            << " | Shape Number: " << count;
         showInfoAlert ("Largest 2D Shape",  oss.str().c_str());
     }
 }
