@@ -5,6 +5,7 @@
 #include <stdexcept>
 
 class QGraphicsItem;
+class QColor;
 // Using pointer instead of reference to allow null values
 class MyShape {
     private:
@@ -29,6 +30,7 @@ class MyShape {
         std::string getFillColor() const;
         std::string getStrokeColor() const;
         void setFillColor(std::string* color);
+        void setFillColor(QColor* color);
         void setStrokeColor(std::string* color);
         std::string getDefaultFillColor() const;
         std::string getDefaultStrokeColor() const;

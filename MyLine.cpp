@@ -21,6 +21,7 @@
 #include <QGraphicsItem>
 #include <QPen>
 #include <QColor>
+#include <QString>
 
 MyLine::MyLine (MyPoint* startPoint, MyPoint* endPoint, std::string* color)
     : My1DShape (startPoint, endPoint, color) {
@@ -56,10 +57,13 @@ std::string MyLine::getName() const{
 QGraphicsItem* MyLine::toQShape() const{
     QGraphicsLineItem* line = new QGraphicsLineItem();
     if (gridLineWidth > 0 && !getStrokeColor().empty()) {
-        line->setPen(QPen(QColor(getStrokeColor().c_str()), gridLineWidth));
-    } else if (gridLineWidth <= 0){
-        line->setPen(QPen(QColor(getDefaultStrokeColor().c_str()), 1.0));
+        line->setPen(QPen(QColor::fromString(QString::fromStdString(getStrokeColor())), gridLineWidth));
+    } else if (gridLineWidth <= 0 && !getStrokeColor().empty()){
+        line->setPen(QPen(QColor::fromString(QString::fromStdString(getStrokeColor())), 1.0));
+    } else {
+        line->setPen(QPen(QColor::fromString(QString::fromStdString(getDefaultStrokeColor())), 1.0));
     }
+
     line->setLine(getStartPoint()->getX(), getStartPoint()->getY(),
                   getEndPoint()->getX(), getEndPoint()->getY());
     return line;

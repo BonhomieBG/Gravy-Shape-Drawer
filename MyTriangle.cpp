@@ -23,6 +23,7 @@
 #include <QPen>
 #include <QPolygonF>
 #include <QPointF>
+#include <QString>
 #include <QGraphicsPolygonItem>
 
 class MyTrianglePrivate{
@@ -153,15 +154,17 @@ QGraphicsItem* MyTriangle::toQShape() const{
     QGraphicsPolygonItem* triangle = new QGraphicsPolygonItem();
 
     if (gridLineWidth > 0 && !getStrokeColor().empty()) {
-        triangle->setPen(QPen(QColor(getStrokeColor().c_str()), gridLineWidth));
-    } else if (gridLineWidth <= 0){
-        triangle->setPen(QPen(QColor(getDefaultStrokeColor().c_str()), 1.0));
+        triangle->setPen(QPen(QColor::fromString(QString::fromStdString(getStrokeColor())), gridLineWidth));
+    } else if (gridLineWidth <= 0 && !getStrokeColor().empty()){
+        triangle->setPen(QPen(QColor::fromString(QString::fromStdString(getStrokeColor())), 1.0));
+    } else {
+        triangle->setPen(QPen(QColor::fromString(QString::fromStdString(getDefaultStrokeColor())), 1.0));
     }
 
     if (getFillStatus() && !getFillColor().empty()) {
-        triangle->setBrush(QBrush(QColor(getFillColor().c_str())));
+        triangle->setBrush(QBrush(QColor::fromString(QString::fromStdString(getFillColor()))));
     } else if (getFillStatus() && getFillColor().empty()){
-        triangle->setBrush(QBrush(QColor(getDefaultFillColor().c_str())));
+        triangle->setBrush(QBrush(QColor::fromString(QString::fromStdString(getDefaultFillColor()))));
     }
 
     triangle->setPolygon(QPolygonF()<< QPointF(p1->getX(), p1->getY()) 
