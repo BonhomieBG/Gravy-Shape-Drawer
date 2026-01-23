@@ -2,6 +2,8 @@
 // GUIHandler handle the main window to display all elements of the program. Linking mouse handler, gradient color, 
 // RGB and canvas helper to the main window for interaction.
 
+// Page style and UI styling handle by AI
+
 #include <QGraphicsView>
 #include <QGraphicsScene>
 #include <QPainter>
@@ -30,6 +32,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QCheckBox>
 
 #include "CanvasHelper.h"
 #include "GUIHandler.h"
@@ -47,22 +50,34 @@
 class GUIPrivate{
     private:
     GUIHandler* gui;
-    CanvasHelper* canvas;
     std::vector<QGraphicsLineItem*> gridItems;
     public:
 
-    GUIPrivate(GUIHandler* guiHandler, CanvasHelper* canvasHelper) 
-        : gui(guiHandler), canvas(canvasHelper) {
+    GUIPrivate(GUIHandler* guiHandler) 
+        : gui(guiHandler) {
         propertyTitle->setStyleSheet("font-weight: bold; font-size: 14px; padding: 5px;");
         
         // Initialize labels with proper values now that gui and canvas are set
         strokeColorLabel->setText(QString::fromStdString("Outline: " + gui->userStrokeColor));
+        strokeColorLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
         fillColorLabel->setText(QString::fromStdString("Filled: " + std::string(gui->isFilled ? "Yes" : "No")));
+        fillColorLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
         lineWidthLabel->setText(QString::fromStdString("Line Width: "+ std::string(gui->gridLine == 0.0? "Default" : std::to_string (gui->gridLine))));
+        lineWidthLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
         gradientStatusLabel->setText(QString::fromStdString("Gradient: "+ std::string(ColorPicker::isUseGradient()? "Yes": "No")));
-        shapeCountLabel->setText(QString::fromStdString("Total Shapes: "+ std::to_string(canvas->getAllShapes().size())));
+        gradientStatusLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+        shapeCountLabel->setText(QString::fromStdString("Total Shapes: "+ std::to_string(gui->getCanvas()->getAllShapes().size())));
+        shapeCountLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
         gradientColorLabel->setText(QString::fromStdString("Gradient Colors: "+ std::string(
             !gui->startGradient.empty() && !gui->endGradient.empty()? gui->startGradient + " to " + gui->endGradient : "Default")));
+        
+            // Add RGB support
+        if (gui->rgbEnable && gui->r && gui->g && gui->b > 0) {
+            ColorPicker::r = gui->r;
+            ColorPicker::g = gui->g;
+            ColorPicker::b = gui->b;
+        }
+        if (updatePropertyPanel) updatePropertyPanel();
     };
 
     ~GUIPrivate() = default;
@@ -149,15 +164,19 @@ class GUIPrivate{
     QLabel* gradientStatusLabel = new QLabel();
     QLabel* shapeCountLabel = new QLabel();
     QLabel* gradientColorLabel = new QLabel();
+    QLabel* rgbValue = new QLabel();
 
     std::function<void()> updatePropertyPanel = [this](){
         strokeColorLabel->setText(QString::fromStdString("Outline: " + gui->userStrokeColor));
         fillColorLabel->setText(QString::fromStdString("Filled: " + std::string(gui->isFilled ? "Yes" : "No")));
         lineWidthLabel->setText(QString::fromStdString("Line Width: "+ std::string(gui->gridLine == 0.0? "Default" : std::to_string (gui->gridLine))));
         gradientStatusLabel->setText(QString::fromStdString("Gradient: "+ std::string(ColorPicker::isUseGradient()? "Yes": "No")));
-        shapeCountLabel->setText(QString::fromStdString("Total Shapes: "+ std::to_string(canvas->getAllShapes().size())));
+        shapeCountLabel->setText(QString::fromStdString("Total Shapes: "+ std::to_string(gui->getCanvas()->getAllShapes().size())));
         gradientColorLabel->setText(QString::fromStdString("Gradient Colors: "+ std::string(
             !gui->startGradient.empty() && !gui->endGradient.empty()? gui->startGradient + " to " + gui->endGradient : "Default")));
+        if (gui->rgbEnable){
+        rgbValue->setText(QString::fromStdString("R: "+ std::to_string(gui->r) +" G: " + std::to_string(gui->g) +" B: "+std::to_string(gui->b)));
+        }
     };
 };
 
@@ -166,8 +185,8 @@ GUIHandler::~GUIHandler() = default;
 GUIHandler::GUIHandler(){
     this->coodinatePreview = new QLabel(this);
     this->m_gv = std::make_unique<QGraphicsView>();
-    this->m_canvas = std::make_unique<CanvasHelper>(m_gv.get());
-    this->m_guiPrivate = std::make_unique<GUIPrivate>(this, m_canvas.get());
+    this->m_canvas = std::make_shared<CanvasHelper>(m_gv.get());
+    this->m_guiPrivate = new GUIPrivate (this);
     this->m_toolbar = std::make_unique<QToolBar>();
     this->m_canvas->setGUIHandler(this);
     this->mouseHandler = std::make_unique<MouseHandler> (m_canvas.get(), coodinatePreview, m_gv.get()); // mousehandler is qgraphicscene subclass
@@ -180,7 +199,16 @@ GUIHandler::GUIHandler(){
     this->colorSeletionbox = new QDockWidget();
     this->rgbSeletionbox = new QDockWidget();
     this->rgbStatusbox = new QDockWidget();
+    this->propertyDisplay = new QDockWidget();
+    
+    if (rgbEnable) {
+    this->rgbColor = std::make_unique<QColor>(r, g, b);
+    }
 };
+
+CanvasHelper* GUIHandler::getCanvas(){
+    return m_canvas.get();
+}
 
 void GUIHandler::start(){
     // create graphic view and scene
@@ -223,6 +251,9 @@ void GUIHandler::start(){
     QAction* setBgColorAction = optionsMenu->addAction("Set Background Color");
     QAction* enableGradientAction = optionsMenu->addAction("Enable Gradient Colors");
     QAction* enableFilledAction = optionsMenu->addAction("Enable Color Filling");
+    QAction* enablergbAction = optionsMenu->addAction("Enable RGB Corloring");
+    QAction* rgbValueAction = optionsMenu->addAction("Set RGB Value");
+    enablergbAction->setCheckable(true);
     enableFilledAction->setCheckable(true);
     enableGradientAction->setCheckable(true);
     QAction* setGradientColorAction = optionsMenu->addAction("Set Gradient Color");
@@ -308,6 +339,7 @@ void GUIHandler::start(){
     addShapeBtn->setStyleSheet(buttonStyle);
     cancelBtn->setStyleSheet(cancelStyle);
     backBtn->setStyleSheet(backStyle);
+
     
     MainMenu->addWidget(addShapeBtn);
     MainMenu->addWidget(drawShapeBtn);
@@ -328,6 +360,7 @@ void GUIHandler::start(){
     circleBtn->hide();
     cancelBtn->hide();
     backBtn->hide();
+
     
     // Add both layouts to topContainer
     topContainer->addLayout(MainMenu);
@@ -422,6 +455,7 @@ void GUIHandler::start(){
 
     connect(lineBtn, &QPushButton::clicked, [this](){
         mouseHandler->setShapeType(std::string("LINE"));
+        // RGB handling in Canvashelper
     });
 
     connect(triangleBtn, &QPushButton::clicked, [this](){
@@ -599,23 +633,23 @@ void GUIHandler::start(){
                 std::shared_ptr<MyShape> shape;
                 
                 if (type == "Line") {
-                    auto p1 = std::make_shared<MyPoint>(obj["x1"].toDouble(), obj["y1"].toDouble());
-                    auto p2 = std::make_shared<MyPoint>(obj["x2"].toDouble(), obj["y2"].toDouble());
-                    shape = std::make_shared<MyLine>(p1.get(), p2.get());
+                    MyPoint* p1 = new MyPoint(obj["x1"].toDouble(), obj["y1"].toDouble());
+                    MyPoint* p2 = new MyPoint(obj["x2"].toDouble(), obj["y2"].toDouble());
+                    shape = std::make_shared<MyLine>(p1, p2);
                 } else if (type == "Circle") {
-                    auto c = std::make_shared<MyPoint>(obj["centerX"].toDouble(), obj["centerY"].toDouble());
-                    shape = std::make_shared<MyCircle>(c.get(), obj["radius"].toDouble());
+                    MyPoint* c = new MyPoint(obj["centerX"].toDouble(), obj["centerY"].toDouble());
+                    shape = std::make_shared<MyCircle>(c, obj["radius"].toDouble());
                 } else if (type == "Square") {
-                    auto tl = std::make_shared<MyPoint>(obj["topLeftX"].toDouble(), obj["topLeftY"].toDouble());
-                    shape = std::make_shared<MySquare>(tl.get(), obj["side"].toDouble());
+                    MyPoint* tl = new MyPoint(obj["topLeftX"].toDouble(), obj["topLeftY"].toDouble());
+                    shape = std::make_shared<MySquare>(tl, obj["side"].toDouble());
                 } else if (type == "Rectangle") {
-                    auto tl = std::make_shared<MyPoint>(obj["topLeftX"].toDouble(), obj["topLeftY"].toDouble());
-                    shape = std::make_shared<MyRectangle>(tl.get(), obj["width"].toDouble(), obj["height"].toDouble());
+                    MyPoint* tl = new MyPoint(obj["topLeftX"].toDouble(), obj["topLeftY"].toDouble());
+                    shape = std::make_shared<MyRectangle>(tl, obj["width"].toDouble(), obj["height"].toDouble());
                 } else if (type == "Triangle") {
-                    auto p1 = std::make_shared<MyPoint>(obj["x1"].toDouble(), obj["y1"].toDouble());
-                    auto p2 = std::make_shared<MyPoint>(obj["x2"].toDouble(), obj["y2"].toDouble());
-                    auto p3 = std::make_shared<MyPoint>(obj["x3"].toDouble(), obj["y3"].toDouble());
-                    shape = std::make_shared<MyTriangle>(p1.get(), p2.get(), p3.get());
+                    MyPoint* p1 = new MyPoint(obj["x1"].toDouble(), obj["y1"].toDouble());
+                    MyPoint* p2 = new MyPoint(obj["x2"].toDouble(), obj["y2"].toDouble());
+                    MyPoint* p3 = new MyPoint(obj["x3"].toDouble(), obj["y3"].toDouble());
+                    shape = std::make_shared<MyTriangle>(p1, p2, p3);
                 }
                 
                 if (shape) {
@@ -728,19 +762,72 @@ void GUIHandler::start(){
         QMessageBox::information(this, "About", "Shape Management GUI\nVersion 1.0\n\nDrawing application for managing geometric shapes by BG.");
     });
 
+    connect(enableGradientAction, &QAction::triggered, [this](bool checked){
+        ColorPicker::setUseGradient(checked);
+        m_guiPrivate->updatePropertyPanel();
+    });
+
+    connect(enableFilledAction, &QAction::triggered, [this](bool checked){
+        isFilled = checked;
+        m_guiPrivate->updatePropertyPanel();
+    });
+
+    connect(enablergbAction, &QAction::triggered, [this](bool checked){
+        rgbEnable = checked;
+        m_guiPrivate->updatePropertyPanel();
+    });
+
+    connect(rgbValueAction, &QAction::triggered, [this](){
+        bool ok;
+        QString input = QInputDialog::getText(nullptr, "RGB Color Setting", 
+            "Enter RGB values (format: r,g,b):\nExample: 255,128,0", 
+            QLineEdit::Normal, "", &ok);
+        
+        if (!input.isEmpty() && ok){
+            QStringList values = input.split(',');
+            if (values.size() == 3){
+                bool rOk, gOk, bOk;
+                int r = values[0].trimmed().toInt(&rOk);
+                int g = values[1].trimmed().toInt(&gOk);
+                int b = values[2].trimmed().toInt(&bOk);
+                
+                if (rOk && gOk && bOk){
+                    ColorPicker::setRGB(r, g, b);
+                    m_guiPrivate->updatePropertyPanel();
+                }
+            }
+        }
+    });
+
+    connect(setGradientColorAction, &QAction::triggered, [this](){
+        bool ok;
+        bool activeGradient = ColorPicker::useGradient; 
+        QString answer1 = QInputDialog::getText(nullptr, "Gradient Color Setting", "Start Color: ", QLineEdit::Normal, QString::fromStdString(activeGradient? "Gradient On": "Gradient Off"), &ok);
+        if (!answer1.isEmpty() && ok){
+            std::string Answer1 = validationCheckStringUp(answer1.toStdString());
+            startGradient = Answer1;
+        }
+        QString answer2 = QInputDialog::getText(nullptr, "Gradient Color Setting", "End Color: ", QLineEdit::Normal, QString::fromStdString(activeGradient? "Gradient On": "Gradient Off"), &ok);
+        if (!answer2.isEmpty() && ok){
+            std::string Answer2 = validationCheckStringUp(answer2.toStdString());
+            endGradient = Answer2;
+        }
+        m_guiPrivate->updatePropertyPanel();
+    });
+
     // Connect coodinate preview with mouse handler
     coodinatePreview->setStyleSheet(
         "font-size: 11px;"
         "font-family: 'Segoe UI', Arial, sans-serif;"
         "background-color: #f8f9fa;"
-        "color: #212529;"
+        "color: #000000;"
         "padding: 8px;"
-        "border: 1px solid #dee2e6;"
+        "border: 1px solid #fcfcfd;"
         "border-radius: 4px;"
     );
 
     // Create dock widget for coordinate display (top-left area)
-    QDockWidget* coordinateDock = new QDockWidget("Mouse Coordinates", this);
+    QDockWidget* coordinateDock = new QDockWidget("", this);
     coordinateDock->setWidget(coodinatePreview);
     coordinateDock->setFeatures(QDockWidget::NoDockWidgetFeatures); // Make it fixed
     addDockWidget(Qt::TopDockWidgetArea, coordinateDock);
@@ -753,10 +840,10 @@ void GUIHandler::start(){
         "    font-weight: bold;"
         "}"
         "QDockWidget::title {"
-        "    background-color: #2c3e50;"
+        "    background-color: #007bf5;"
         "    color: white;"
         "    padding: 6px;"
-        "    border: 1px solid #34495e;"
+        "    border: 1px solid #ba5656;"
         "}"
         "QDockWidget::close-button, QDockWidget::float-button {"
         "    background: transparent;"
@@ -781,25 +868,41 @@ void GUIHandler::start(){
     );
     
     // Add right side dock widgets
-    colorSeletionbox->setWindowTitle("Color Selection");
     colorSeletionbox->setFeatures(QDockWidget::NoDockWidgetFeatures);
     colorSeletionbox->setStyleSheet(dockStyle);
     addDockWidget(Qt::RightDockWidgetArea, colorSeletionbox);
     
-    gridsizebox->setWindowTitle("Grid Size");
     gridsizebox->setFeatures(QDockWidget::NoDockWidgetFeatures);
     gridsizebox->setStyleSheet(dockStyle);
     addDockWidget(Qt::RightDockWidgetArea, gridsizebox);
 
-    rgbStatusbox->setWindowTitle("RGB Status");
     rgbStatusbox->setFeatures(QDockWidget::NoDockWidgetFeatures);
     rgbStatusbox->setStyleSheet(dockStyle);
     addDockWidget(Qt::LeftDockWidgetArea, rgbStatusbox);
 
-    rgbSeletionbox->setWindowTitle("RGB Value");
     rgbSeletionbox->setFeatures(QDockWidget::NoDockWidgetFeatures);
     rgbSeletionbox->setStyleSheet(dockStyle);
     addDockWidget(Qt::LeftDockWidgetArea, rgbSeletionbox);
+
+    QWidget* widget = new QWidget();
+    QVBoxLayout* propertyLayout = new QVBoxLayout(widget);
+    propertyLayout->addWidget(m_guiPrivate->propertyTitle);
+    propertyLayout->addWidget(m_guiPrivate->strokeColorLabel);
+    propertyLayout->addWidget(m_guiPrivate->fillColorLabel);
+    propertyLayout->addWidget(m_guiPrivate->gradientStatusLabel);
+    propertyLayout->addWidget(m_guiPrivate->gradientColorLabel);
+    propertyLayout->addWidget(m_guiPrivate->lineWidthLabel);
+    propertyLayout->addWidget(m_guiPrivate->rgbValue);
+    propertyLayout->addWidget(m_guiPrivate->shapeCountLabel);
+    widget->setLayout(propertyLayout);
+
+    propertyDisplay->setFeatures(QDockWidget::NoDockWidgetFeatures);
+    propertyDisplay->setStyleSheet(dockStyle);
+    propertyDisplay->setWidget(widget);
+    propertyDisplay->setMinimumWidth(220);
+    propertyDisplay->setMaximumWidth(220);
+
+    addDockWidget(Qt::RightDockWidgetArea, propertyDisplay);
     
     // Apply main window styling
     setStyleSheet(
@@ -817,7 +920,6 @@ void GUIHandler::start(){
     
     // Process events to ensure window is fully resized before getting viewport size
     QApplication::processEvents();
-    QStackedLayout* stack = new QStackedLayout (this);
     
     // Set scene rect to match the viewport size after window is shown
     QSize viewSize = m_gv->viewport()->size();

@@ -1,6 +1,7 @@
 #include "MyShape.h"
 #include "Utility.hpp"
 
+#include <QColor>
 #include <stdexcept>
 
 MyShape::MyShape(){
@@ -77,6 +78,11 @@ void MyShape::setFillColor(std::string* color){
     } else {
         Fillcolor = DefaultFillColor;
     }
+}
+
+void MyShape::setFillColor(QColor* color){
+    std::string name = color->name().toStdString();
+    Fillcolor = name;
 }
 
 void MyShape::setStrokeColor(std::string* color){

@@ -32,9 +32,10 @@ public:
     const MyPoint* getTopLeft() const;
     const MyPoint* getBottomRight() const;
 
-    virtual bool operator==(My2DShape& other) const;
+    bool operator==(My2DShape& other) const;
     int compareTo(Comparable& other) const noexcept;
     My2DShape* max(My2DShape* o1, My2DShape* o2) const;
+    
 private:
     MyPoint* topLeft;
     MyPoint* bottomRight;

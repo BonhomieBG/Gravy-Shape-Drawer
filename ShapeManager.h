@@ -24,6 +24,7 @@ class ShapeManager {
         void findMax2DShape() const;
         std::vector<std::shared_ptr<MyShape>> getAllShapes() const;
         std::shared_ptr<MyShape> getShape(int index) const;
+
     private:
         std::vector<std::shared_ptr<MyShape>> shapes_;
 };

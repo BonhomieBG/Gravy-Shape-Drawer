@@ -88,8 +88,8 @@ class MouseHandlerPrivate{
                     std::shared_ptr<MyPoint> lastPoint = std::make_shared<MyPoint>(clickedPoints->back());
                     double distance = std::sqrt(std::pow(x - lastPoint->getX(), 2) + std::pow(y - lastPoint->getY(), 2));
 
-                    // Only add point if distance is greater than 50 pixels threshold
-                    double threshold = 50.0; // pixels
+                    // Only add point if distance is greater than 100 pixels threshold
+                    double threshold = 100.0; // pixels
                     if (distance >= threshold){
                         std::shared_ptr<MyPoint> point =  std::make_shared<MyPoint>(x, y);
                         clickedPoints->push_back(*point);
@@ -258,7 +258,7 @@ class MouseHandlerPrivate{
             currentShape = shape;
         }
 
-std::string* setShapePtr(const std::string& shape){
+        std::string* getShapePtr(const std::string& shape){
             currentShape = shape;
             return &currentShape;
         }
@@ -357,28 +357,37 @@ void MouseHandler::handler(QGraphicsSceneMouseEvent* event){
         coordinatePreview->setText(QString::fromStdString(coordinate.str()));
     
         if (!canvas->getAllShapes().empty()){
-            for (int i = canvas->getAllShapes().size() -1; i>= 0; i--){
+            // Vector array start from 0, last value is at size-1
+            for (int i = canvas->getAllShapes().size()-1; i>= 0; i--){
                 std::shared_ptr<MyShape> currentShape = canvas->getShape(i);
-                std::string shapeType = currentShape->NametoUpper();
-                
-                if (shapeType == "CIRCLE"){
+                QGraphicsItem* item = currentShape->toQShape();
+                const bool circle = dynamic_cast<MyCircle*>(currentShape.get())? true: false;
+                const bool triangle = dynamic_cast<MyTriangle*>(currentShape.get())? true: false;
+                const bool square = dynamic_cast<MySquare*>(currentShape.get())? true: false;
+                const bool rectangle = dynamic_cast<MyRectangle*>(currentShape.get())? true: false;
+                const bool line = dynamic_cast<MyLine*>(currentShape.get())? true: false;
+
+                if (circle && item->type() == QGraphicsEllipseItem::Type){
                     MyCircle* circle = dynamic_cast<MyCircle*>(currentShape.get());
-                    if (circle && mouseHandlerPrivate->isInsideCircle(currentX, currentY, *circle)){
+                    if (mouseHandlerPrivate->isInsideCircle(currentX, currentY, *circle)){
                         std::ostringstream info;
                         info.precision(2);
-                        info << std::fixed << "Radius= " << circle->getRadius() 
+                        info << std::fixed
+                             << " | Center Point= " << circle->getCenter()->getX() << "," << circle->getCenter()->getY()
+                             << " | Radius= " << circle->getRadius() 
                              << " | Area= " << circle->calculateArea() 
                              << " | Perimeter= " << circle->calculatePerimeter();
                         coordinatePreview->setText(QString::fromStdString(info.str()));
                         break;
                     }
                 }
-                else if (shapeType == "RECTANGLE"){
+                else if (rectangle && item->type() == QGraphicsRectItem::Type){
                     MyRectangle* rectangle = dynamic_cast<MyRectangle*>(currentShape.get());
-                    if (rectangle && mouseHandlerPrivate->isInsideRectangle(currentX, currentY, *rectangle)){
+                    if (mouseHandlerPrivate->isInsideRectangle(currentX, currentY, *rectangle)){
                         std::ostringstream info;
                         info.precision(2);
-                        info << std::fixed << "Width= " << rectangle->getWidth()
+                        info << std::fixed
+                             << " | Width= " << rectangle->getWidth()
                              << " | Height= " << rectangle->getHeight() 
                              << " | Area= " << rectangle->calculateArea() 
                              << " | Perimeter= " << rectangle->calculatePerimeter();
@@ -386,37 +395,39 @@ void MouseHandler::handler(QGraphicsSceneMouseEvent* event){
                         break;
                     }
                 }
-                else if (shapeType == "SQUARE"){
+                else if (square && item->type() == QGraphicsRectItem::Type){
                     MySquare* square = dynamic_cast<MySquare*>(currentShape.get());
-                    if (square && mouseHandlerPrivate->isInsideSquare(currentX, currentY, *square)){
+                    if (mouseHandlerPrivate->isInsideSquare(currentX, currentY, *square)){
                         std::ostringstream info;
                         info.precision(2);
-                        info << std::fixed << "Width= " << square->getSide() 
-                             << " | Height= " << square->getSide()
+                        info << std::fixed
+                             << " | Side Length= " << square->getSide()
                              << " | Area= " << square->calculateArea() 
                              << " | Perimeter= " << square->calculatePerimeter();
                         coordinatePreview->setText(QString::fromStdString(info.str()));
                         break;
                     }
                 }
-                else if (shapeType == "TRIANGLE"){
+                else if (triangle && item->type() == QGraphicsPolygonItem::Type){
                     MyTriangle* triangle = dynamic_cast<MyTriangle*>(currentShape.get());
-                    if (triangle && mouseHandlerPrivate->isInsideTriangle(currentX, currentY, *triangle)){
+                    if (mouseHandlerPrivate->isInsideTriangle(currentX, currentY, *triangle)){
                         std::ostringstream info;
                         info.precision(2);
-                        info << std::fixed << "Sides= " << triangle->getSide1() << ", " << triangle->getSide2() << ", " << triangle->getSide3()
+                        info << std::fixed << "Point1= " << triangle->getPoint1()->getX() << ","<< triangle->getPoint1()->getY() << ", Point2= " << triangle->getPoint2()->getX() << "," << triangle->getPoint2()->getY() << ", Point3= " << triangle->getPoint3()->getX() << ","<< triangle->getPoint3()->getY()
+                             << " | Side 1= " << triangle->getSide1() << ", Side 2= " << triangle->getSide2() << ", Side 3=" << triangle->getSide3()
                              << " | Area= " << triangle->calculateArea() 
                              << " | Perimeter= " << triangle->calculatePerimeter();
                         coordinatePreview->setText(QString::fromStdString(info.str()));
                         break;
                     }
                 }
-                else if (shapeType == "LINE"){
+                else if (line && item->type() == QGraphicsLineItem::Type){
                     MyLine* line = dynamic_cast<MyLine*>(currentShape.get());
-                    if (line && mouseHandlerPrivate->isNearLine(currentX, currentY, *line)){
+                    if (mouseHandlerPrivate->isNearLine(currentX, currentY, *line)){
                         std::ostringstream info;
                         info.precision(2);
-                        info << std::fixed << "Length= " << line->calculateLength();
+                        info << std::fixed << "Start Point X and Y= " << line->getStartPoint()->getX() << ","<< line->getStartPoint()->getY() << ", End Point X and Y= " << line->getEndPoint()->getX() << ","<< line->getEndPoint()->getY()
+                             << " | Length= " << line->calculateLength();
                         coordinatePreview->setText(QString::fromStdString(info.str()));
                         break;
                     }

@@ -23,6 +23,7 @@
 #include <QBrush>
 #include <QColor>
 #include <QPen>
+#include <QString>
 
 MyRectangle::MyRectangle(MyPoint* topLeft, double width, double height) : My2DShape(topLeft, makeBottomRight(topLeft, width, height)){
     if (std::isnan(width) || std::isnan(height) || width <= 0 || height <= 0) {
@@ -70,15 +71,17 @@ std::string MyRectangle::getName() const {
 QGraphicsItem* MyRectangle::toQShape() const{
     QGraphicsRectItem* rectangle = new QGraphicsRectItem();
     if (gridLineWidth > 0 && !getStrokeColor().empty()) {
-        rectangle->setPen(QPen(QColor(getStrokeColor().c_str()), gridLineWidth));
-    } else if (gridLineWidth <= 0){
-        rectangle->setPen(QPen(QColor(getDefaultStrokeColor().c_str()), 1.0));
+        rectangle->setPen(QPen(QColor::fromString(QString::fromStdString(getStrokeColor())), gridLineWidth));
+    } else if (gridLineWidth <= 0 && !getStrokeColor().empty()){
+        rectangle->setPen(QPen(QColor::fromString(QString::fromStdString(getStrokeColor())), 1.0));
+    } else {
+        rectangle->setPen(QPen(QColor::fromString(QString::fromStdString(getDefaultStrokeColor())), 1.0));
     }
 
     if (getFillStatus() && !getFillColor().empty()) {
-        rectangle->setBrush(QBrush(QColor(getFillColor().c_str())));
+        rectangle->setBrush(QBrush(QColor::fromString(QString::fromStdString(getFillColor()))));
     } else if (getFillStatus() && getFillColor().empty()){
-        rectangle->setBrush(QBrush(QColor(getDefaultFillColor().c_str())));
+        rectangle->setBrush(QBrush(QColor::fromString(QString::fromStdString(getDefaultFillColor()))));
     }
 
     rectangle->setRect(getTopLeft()->getX(),

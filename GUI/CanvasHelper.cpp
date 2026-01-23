@@ -25,36 +25,47 @@ class CanvasPrivate{
         CanvasPrivate() = default;
         ~CanvasPrivate() = default;
 
+        // fix is same shape bug that cause all shape to be count as line
         bool isSameShape(QGraphicsItem* qitem, std::shared_ptr<MyShape> shape){
             if (auto line = dynamic_cast<QGraphicsLineItem*>(qitem)){
-                if (MyLine* myline = dynamic_cast<MyLine*>(shape.get())){
+                try{
+                    if (MyLine* myline = dynamic_cast<MyLine*>(shape.get())){
                     return std::abs(line->line().x1() - myline->getStartPoint()->getX()) < 0.1 &&
                         std::abs(line->line().y1() - myline->getStartPoint()->getY()) < 0.1 &&
                         std::abs(line->line().x2() - myline->getEndPoint()->getX()) < 0.1 &&
                         std::abs(line->line().y2() - myline->getEndPoint()->getY()) < 0.1;
-                } else if (auto rectangle = dynamic_cast<QGraphicsRectItem*>(qitem)){
-                if (MyRectangle* rec = dynamic_cast<MyRectangle*>(shape.get())){
+                    }
+                } catch (std::exception){}; // no error throw
+            } else if (auto rectangle = dynamic_cast<QGraphicsRectItem*>(qitem)){
+                try{
+                    if (MyRectangle* rec = dynamic_cast<MyRectangle*>(shape.get())){
                     return std::abs(rectangle->rect().x() - rec->getTopLeft()->getX()) < 0.1 &&
                         std::abs(rectangle->rect().y() - rec->getTopLeft()->getY()) < 0.1 &&
                         std::abs(rectangle->rect().width() - rec->getWidth()) < 0.1 &&
                         std::abs(rectangle->rect().height() - rec->getHeight()) < 0.1;
                     }
-                } else if (auto circle = dynamic_cast<QGraphicsEllipseItem*>(qitem)){
-                if (MyCircle* cir = dynamic_cast<MyCircle*>(shape.get())){
+                } catch (std::exception){};
+            } else if (auto circle = dynamic_cast<QGraphicsEllipseItem*>(qitem)){
+                try{
+                    if (MyCircle* cir = dynamic_cast<MyCircle*>(shape.get())){
                     return std::abs(circle->rect().x() - cir->getCenter()->getX() + cir->getRadius()) < 0.1 &&
                         std::abs(circle->rect().y() - cir->getCenter()->getY() + cir->getRadius()) < 0.1 &&
                         std::abs(circle->rect().width() - cir->getRadius()*2) < 0.1 &&
                         std::abs(circle->rect().height() - cir->getRadius()*2) < 0.1;
                     }
-                } else if (auto square = dynamic_cast<QGraphicsRectItem*>(qitem)){
-                if (MySquare* sq = dynamic_cast<MySquare*>(shape.get())){
+                } catch(std::exception){};
+            } else if (auto square = dynamic_cast<QGraphicsRectItem*>(qitem)){
+                try{
+                    if (MySquare* sq = dynamic_cast<MySquare*>(shape.get())){
                     return std::abs(square->rect().x() - sq->getTopLeft()->getX()) < 0.1 &&
-                    std::abs(square->rect().y() - sq->getTopLeft()->getY()) < 0.1 &&
-                    std::abs(square->rect().width() - sq->getSide()) < 0.1 &&
-                    std::abs(square->rect().height() - sq->getSide()) < 0.1;
+                        std::abs(square->rect().y() - sq->getTopLeft()->getY()) < 0.1 &&
+                        std::abs(square->rect().width() - sq->getSide()) < 0.1 &&
+                        std::abs(square->rect().height() - sq->getSide()) < 0.1;
                     }
-                } else if (auto triangle = dynamic_cast<QGraphicsPolygonItem*>(qitem)){
-                if (MyTriangle* tri = dynamic_cast<MyTriangle*>(shape.get())){
+                } catch (std::exception){};
+            } else if (auto triangle = dynamic_cast<QGraphicsPolygonItem*>(qitem)){
+                try{
+                    if (MyTriangle* tri = dynamic_cast<MyTriangle*>(shape.get())){
                     QPointF p1 = triangle->polygon().at(0);
                     QPointF p2 = triangle->polygon().at(1);
                     QPointF p3 = triangle->polygon().at(2);
@@ -65,9 +76,9 @@ class CanvasPrivate{
                         std::abs(p3.x() - tri->getPoint3()->getX()) < 0.1 &&
                         std::abs(p3.y() - tri->getPoint3()->getY()) < 0.1;
                     }
-                } else{
-                    return false;
-                }
+                } catch (std::exception){};
+            } else {
+                return false;
             }
         }
 
@@ -252,8 +263,11 @@ void CanvasHelper::AutoCreateLineFromPoints(MyPoint p1, MyPoint p2){
             guihandler->gridLine = 1.0;
         }
 
-        if (guihandler->isStroked && !guihandler->userStrokeColor.empty()){
-            line->setStrokeColor(&guihandler->userStrokeColor);
+        if (guihandler->isFilled && guihandler->rgbEnable) {
+            line->setFillColor(guihandler->rgbColor.get());
+        }
+        if (guihandler->isFilled && !guihandler->userFillColor.empty() && !guihandler->rgbEnable){
+            line->setFillColor(&guihandler->userFillColor);
         }
         addShape(line);
     } catch (InvalidCoordinateException& e){
@@ -280,8 +294,10 @@ void CanvasHelper::AutoCreateCircleFromPoints(MyPoint p1, MyPoint p2){
         if (guihandler->isStroked && !guihandler->userStrokeColor.empty()){
             circle->setStrokeColor(&guihandler->userStrokeColor);
         }
-
-        if (guihandler->isFilled && !guihandler->userFillColor.empty()){
+        if (guihandler->isFilled && guihandler->rgbEnable) {
+            circle->setFillColor(guihandler->rgbColor.get());
+        }
+        if (guihandler->isFilled && !guihandler->userFillColor.empty() && !guihandler->rgbEnable){
             circle->setFillColor(&guihandler->userFillColor);
         }
         addShape(circle);
@@ -308,7 +324,10 @@ void CanvasHelper::AutoCreateRectangleFromPoints(MyPoint p1, MyPoint p2){
             rectangle->setStrokeColor(&guihandler->userStrokeColor);
         }
 
-        if (guihandler->isFilled && !guihandler->userFillColor.empty()){
+        if (guihandler->isFilled && guihandler->rgbEnable) {
+            rectangle->setFillColor(guihandler->rgbColor.get());
+        }
+        if (guihandler->isFilled && !guihandler->userFillColor.empty() && !guihandler->rgbEnable){
             rectangle->setFillColor(&guihandler->userFillColor);
         }
         addShape(rectangle);
@@ -335,7 +354,10 @@ void CanvasHelper::AutoCreateSquareFromPoints(MyPoint p1, MyPoint p2){
             square->setStrokeColor(&guihandler->userStrokeColor);
         }
 
-        if (guihandler->isFilled && !guihandler->userFillColor.empty()){
+        if (guihandler->isFilled && guihandler->rgbEnable) {
+            square->setFillColor(guihandler->rgbColor.get());
+        }
+        if (guihandler->isFilled && !guihandler->userFillColor.empty() && !guihandler->rgbEnable){
             square->setFillColor(&guihandler->userFillColor);
         }
         addShape(square);
@@ -363,7 +385,10 @@ void CanvasHelper::AutoCreateTriangleFromPoints(MyPoint p1, MyPoint p2, MyPoint 
             triangle->setStrokeColor(&guihandler->userStrokeColor);
         }
 
-        if (guihandler->isFilled && !guihandler->userFillColor.empty()){
+        if (guihandler->isFilled && guihandler->rgbEnable) {
+            triangle->setFillColor(guihandler->rgbColor.get());
+        }
+        if (guihandler->isFilled && !guihandler->userFillColor.empty() && !guihandler->rgbEnable){
             triangle->setFillColor(&guihandler->userFillColor);
         }
         addShape(triangle);
@@ -402,7 +427,10 @@ void CanvasHelper::addCircle(){
         }
 
         QString Stroke = QInputDialog::getText(nullptr, "Add Circle", "Enter Stroke Color: ", QLineEdit::Normal, "default:black", &ok);
-        QString Fill = QInputDialog::getText(nullptr, "Add Circle", "Enter Fill Color: ", QLineEdit::Normal, "default:transparent (disabled filling)", &ok);
+        QString Fill;
+        if (!guihandler->rgbEnable){
+            Fill = QInputDialog::getText(nullptr, "Add Circle", "Enter Fill Color: ", QLineEdit::Normal, "default:transparent (disabled filling)", &ok);
+        }
 
         auto center = std::make_shared<MyPoint>(x, y);
         auto circle = std::make_shared<MyCircle>(center.get(), r);
@@ -412,7 +440,11 @@ void CanvasHelper::addCircle(){
             stroke = Stroke.toStdString();
             circle->setStrokeColor(&stroke);
         } else {stroke = "";}
-        if (!Fill.isEmpty()){
+        if (guihandler->rgbEnable){
+            circle->ChangeFilledStatus(true);
+            // rgb color will be set automatically
+        }
+        if (!guihandler->rgbEnable && !Fill.isEmpty()){
             circle->ChangeFilledStatus(true);
             fill = Fill.toStdString();
             circle->setFillColor(&fill);
@@ -521,8 +553,10 @@ void CanvasHelper::addRectangle(){
         }
 
         QString Stroke = QInputDialog::getText(nullptr, "Add Rectangle", "Enter Stroke Color: ", QLineEdit::Normal, "default:black", &ok);
-        QString Fill = QInputDialog::getText(nullptr, "Add Rectangle", "Enter Fill Color: ", QLineEdit::Normal, "default:transparent (disabled filling)", &ok);
-
+        QString Fill ;
+        if (!guihandler->rgbEnable){
+        Fill= QInputDialog::getText(nullptr, "Add Rectangle", "Enter Fill Color: ", QLineEdit::Normal, "default:transparent (disabled filling)", &ok);
+        }
         auto startpoint = std::make_shared<MyPoint>(x, y);
         auto rectangle = std::make_shared<MyRectangle>(startpoint.get(), width, height);
 
@@ -531,7 +565,12 @@ void CanvasHelper::addRectangle(){
             stroke = Stroke.toStdString();
             rectangle->setStrokeColor(&stroke);
         } else {stroke = "";}
-        if (!Fill.isEmpty()){
+
+        if (guihandler->rgbEnable){
+            rectangle->ChangeFilledStatus(true);
+            // rgb color will be set automatically
+        }
+        if (!guihandler->rgbEnable && !Fill.isEmpty()){
             rectangle->ChangeFilledStatus(true);
             fill = Fill.toStdString();
             rectangle->setFillColor(&fill);
@@ -584,8 +623,10 @@ void CanvasHelper::addTriangle(){
             showErrorAlert("Error", "Points must be valid"); return;}
 
         QString Stroke = QInputDialog::getText(nullptr, "Add Triangle", "Enter Stroke Color: ", QLineEdit::Normal, "default:black", &ok);
-        QString Fill = QInputDialog::getText(nullptr, "Add Triangle", "Enter Fill Color: ", QLineEdit::Normal, "default:transparent (disabled filling)", &ok);
-
+        QString Fill;
+        if (!guihandler->rgbEnable) {
+        Fill= QInputDialog::getText(nullptr, "Add Triangle", "Enter Fill Color: ", QLineEdit::Normal, "default:transparent (disabled filling)", &ok);
+        }
         auto triangle = std::make_shared<MyTriangle>(p1.get(), p2.get(), p3.get());
 
         if (!Stroke.isEmpty()){
@@ -593,7 +634,10 @@ void CanvasHelper::addTriangle(){
             stroke = Stroke.toStdString();
             triangle->setStrokeColor(&stroke);
         } else {stroke = "";}
-        if (!Fill.isEmpty()){
+        if (guihandler->rgbEnable){
+            triangle->ChangeFilledStatus(true);
+        }
+        if (!guihandler->rgbEnable && !Fill.isEmpty()){
             triangle->ChangeFilledStatus(true);
             fill = Fill.toStdString();
             triangle->setFillColor(&fill);
@@ -634,7 +678,10 @@ void CanvasHelper::addSquare(){
             showErrorAlert("Error", "Side must be valid"); return;}
 
         QString Stroke = QInputDialog::getText(nullptr, "Add Circle", "Enter Stroke Color: ", QLineEdit::Normal, "default:black", &ok);
-        QString Fill = QInputDialog::getText(nullptr, "Add Circle", "Enter Fill Color: ", QLineEdit::Normal, "default:transparent (disabled filling)", &ok);
+        QString Fill;
+        if(!guihandler->rgbEnable){
+        Fill= QInputDialog::getText(nullptr, "Add Circle", "Enter Fill Color: ", QLineEdit::Normal, "default:transparent (disabled filling)", &ok);
+        }
 
         auto start = std::make_shared<MyPoint>(x, y);
         auto square = std::make_shared<MySquare>(start.get(),side);
@@ -644,7 +691,10 @@ void CanvasHelper::addSquare(){
             stroke = Stroke.toStdString();
             square->setStrokeColor(&stroke);
         } else {stroke = "";}
-        if (!Fill.isEmpty()){
+        if (guihandler->rgbEnable){
+            square->ChangeFilledStatus(true);
+        }
+        if (!guihandler->rgbEnable && !Fill.isEmpty()){
             square->ChangeFilledStatus(true);
             fill = Fill.toStdString();
             square->setFillColor(&fill);
