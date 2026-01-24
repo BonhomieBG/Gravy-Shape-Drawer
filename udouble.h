@@ -1,7 +1,5 @@
 // COPYRIGHT (C) 2026 Tekhour Khov. All Right reserved
-// This File is Free and you can redistribute it and/or modify it under MIT License
-//
-// This library is distributed in the hope that it will be useful,
+// This File is Free and you can redistribute it and/or modify it and is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 //
@@ -164,5 +162,6 @@ public:
         return is;
     }
 };
+
 
 #endif
