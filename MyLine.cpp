@@ -23,6 +23,7 @@
 #include <QColor>
 #include <QString>
 
+
 MyLine::MyLine (MyPoint* startPoint, MyPoint* endPoint, std::string* color)
     : My1DShape (startPoint, endPoint, color) {
     if (startPoint == nullptr || endPoint == nullptr) {

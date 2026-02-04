@@ -32,6 +32,7 @@
 #include <QPushButton>
 #include <type_traits>
 #include <exception>
+#include <udouble>
 
 /*
 FOR STRING CLEARING AND VALIDATION UTILITY, USE ValidationCheckString FUNCTION TO AUTOMATICALLY TRIM, LOWERCASE AND CHECK FOR ALPHABETIC WORDS.
@@ -211,8 +212,8 @@ inline int compare1D(const Comparable& a, const Comparable& b){
     if (!p || !q) {
         throw std::invalid_argument("Invalid comparison between different types.");
     }
-    double Lena = p->calculateLength();
-    double Lenb = q->calculateLength();
+    udouble Lena = p->calculateLength();
+    udouble Lenb = q->calculateLength();
     const double eps = 1e-12;
     if (std::fabs(Lena - Lenb) <= eps) {
         return 0;
@@ -227,9 +228,9 @@ inline int compare2D(const Comparable& a, const Comparable& b){
     if (!p || !q) {
         throw std::invalid_argument("Invalid comparison between different types.");
     }
-    double AreaA = p->calculateArea();
-    double AreaB = q->calculateArea();
-    const double eps = 1e-12;
+    udouble AreaA = p->calculateArea();
+    udouble AreaB = q->calculateArea();
+    const double eps = 1e-12; 
     if (std::fabs(AreaA - AreaB) <= eps) {
         return 0;
     }

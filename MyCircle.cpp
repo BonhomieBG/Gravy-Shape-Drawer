@@ -24,7 +24,7 @@
 #include <QPen>
 
 MyCircle::MyCircle(MyPoint* center, double radius) : My2DShape(new MyPoint(center->getX()-radius, center->getY()-radius), new MyPoint(center->getX()+radius, center->getY()+radius)) {
-    if (std::isnan(radius) || radius <= 0) {
+    if (std::isnan(radius)) {
         throw InvalidRadiusException("Radius must be a positive number.");
     }
     if (!std::isfinite(radius)) {
@@ -41,8 +41,8 @@ MyCircle::MyCircle(MyPoint* topLeft, MyPoint* bottomRight) : My2DShape(topLeft, 
     if (topLeft == nullptr || bottomRight == nullptr) {
         throw std::invalid_argument("Top left and bottom right points cannot be null.");
     }
-    double centerX = (topLeft->getX() + bottomRight->getX()) / 2;
-    double centerY = (topLeft->getY() + bottomRight->getY()) / 2;
+    double centerX = (topLeft->getX() + bottomRight->getX()) / 2.0;
+    double centerY = (topLeft->getY() + bottomRight->getY()) / 2.0;
 
     MyPoint* center = new MyPoint (centerX, centerY);
     this->radius = std::min(std::abs(bottomRight->getX() - topLeft->getX()), std::abs(bottomRight->getY() - topLeft->getY())) / 2;

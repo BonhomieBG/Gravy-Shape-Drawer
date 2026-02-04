@@ -13,7 +13,6 @@
 
 #include "My2DShape.h"
 #include "MyPoint.h"
-
 #include <string>
 class MyRectangle: public My2DShape {
 public:

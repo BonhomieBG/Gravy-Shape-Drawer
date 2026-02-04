@@ -51,8 +51,8 @@ class GUIPrivate{
     private:
     GUIHandler* gui;
     std::vector<QGraphicsLineItem*> gridItems;
-    public:
 
+    public:
     GUIPrivate(GUIHandler* guiHandler) 
         : gui(guiHandler) {
         propertyTitle->setStyleSheet("font-weight: bold; font-size: 14px; padding: 5px;");
@@ -251,6 +251,8 @@ void GUIHandler::start(){
     QAction* setBgColorAction = optionsMenu->addAction("Set Background Color");
     QAction* enableGradientAction = optionsMenu->addAction("Enable Gradient Colors");
     QAction* enableFilledAction = optionsMenu->addAction("Enable Color Filling");
+    QAction* setStaticColorAction = optionsMenu->addAction("Set Fill Color");
+    QAction* setStrokeColorAction = optionsMenu->addAction("Set Stroke Color");
     QAction* enablergbAction = optionsMenu->addAction("Enable RGB Corloring");
     QAction* rgbValueAction = optionsMenu->addAction("Set RGB Value");
     enablergbAction->setCheckable(true);
@@ -775,6 +777,22 @@ void GUIHandler::start(){
     connect(enablergbAction, &QAction::triggered, [this](bool checked){
         rgbEnable = checked;
         m_guiPrivate->updatePropertyPanel();
+    });
+
+    connect(setStaticColorAction, &QAction::triggered, [this](){
+        bool ok;
+        QString input = QInputDialog::getText(nullptr, "Static Color Setting", "Enter Color (format: word): \nExample: red, blue, green", QLineEdit::Normal, "", &ok);
+        if (!input.isEmpty() && ok){
+            userFillColor = input.toStdString();
+        }
+    });
+
+    connect(setStrokeColorAction, &QAction::triggered, [this](){
+        bool ok;
+        QString input = QInputDialog::getText(nullptr, "Stroke Color Setting", "Enter Color (format: word): \nExample: red, blue, green", QLineEdit::Normal, "", &ok);
+        if (!input.isEmpty() && ok){
+            userStrokeColor = input.toStdString();
+        }
     });
 
     connect(rgbValueAction, &QAction::triggered, [this](){

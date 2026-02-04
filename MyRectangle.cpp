@@ -26,7 +26,7 @@
 #include <QString>
 
 MyRectangle::MyRectangle(MyPoint* topLeft, double width, double height) : My2DShape(topLeft, makeBottomRight(topLeft, width, height)){
-    if (std::isnan(width) || std::isnan(height) || width <= 0 || height <= 0) {
+    if (std::isnan(width) || std::isnan(height) || width <= 0.0 || height <= 0.0) {
         throw std::invalid_argument("Width and height must be positive numbers.");
     }
     if (!std::isfinite(width) || !std::isfinite(height)) {
@@ -84,10 +84,16 @@ QGraphicsItem* MyRectangle::toQShape() const{
         rectangle->setBrush(QBrush(QColor::fromString(QString::fromStdString(getDefaultFillColor()))));
     }
 
-    rectangle->setRect(getTopLeft()->getX(),
-                       getTopLeft()->getY(),
-                       width,
-                       height);
+    // Calculate actual top-left corner for correct drawing in all directions
+    double x1 = getTopLeft()->getX();
+    double y1 = getTopLeft()->getY();
+    double x2 = getBottomRight()->getX();
+    double y2 = getBottomRight()->getY();
+    
+    double actualX = std::min(x1, x2);
+    double actualY = std::min(y1, y2);
+    
+    rectangle->setRect(actualX, actualY, width, height);
 
     return rectangle;
 }

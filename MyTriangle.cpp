@@ -13,6 +13,7 @@
 #include "MyPoint.h"
 #include "My2DShape.h"
 #include "Utility.hpp"
+#include <udouble>
 
 #include <string>
 #include <stdexcept>
@@ -39,13 +40,15 @@ class MyTrianglePrivate{
     }
 
     void validateSides( double a, double b, double c){
-        if (std::isnan(a) || std::isnan(b) || std::isnan(c) || a <= 0 || b <= 0 || c <= 0) {
+        if (std::isnan(a) || std::isnan(b) || std::isnan(c)) {
             throw IllegalTriangleException("Triangle sides must be positive numbers.");
         }
         if (!std::isfinite(a) || !std::isfinite(b) || !std::isfinite(c)) {
             throw IllegalTriangleException("Triangle sides cannot be infinite.");
         }
-        if (a + b <= c || a + c <= b || b + c <= a) {
+        // Use epsilon for floating-point comparison tolerance else triangle drawing error due to floating point non exact
+        const double epsilon = 1e-10; //0.0000000001
+        if (a + b < c - epsilon || a + c < b - epsilon || b + c < a - epsilon) {
             throw IllegalTriangleException("The sum of any two sides must be greater than the third side.");
         }
     }

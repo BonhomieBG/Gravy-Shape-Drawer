@@ -35,6 +35,7 @@ class GUIHandler : public QMainWindow{
     inline static std::string startGradient, endGradient;
     inline static int r, g, b;
     inline static std::unique_ptr<QColor> rgbColor;
+    inline static void updatePropertyCallback();
 
     private:
     GUIPrivate* m_guiPrivate;

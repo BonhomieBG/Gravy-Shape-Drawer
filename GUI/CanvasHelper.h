@@ -39,6 +39,8 @@ class CanvasHelper: public ShapeManager {
         void addSquare();
         void addRectangle();
 
+        void updatePropertyPannel();
+
     private:
         QGraphicsView* drawingPane;
         std::function<void()> updateCallback;

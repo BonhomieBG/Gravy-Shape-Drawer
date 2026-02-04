@@ -19,7 +19,7 @@
 #include <sstream>
 #include <cmath>
 #include <algorithm>
-#include <QGraphicsRectItem>
+#include <QGraphicsPathItem>
 #include <QGraphicsItem>
 #include <QBrush>
 #include <QColor>
@@ -27,7 +27,7 @@
 #include <QString>
 
 MySquare::MySquare(MyPoint* topLeft, double side) : My2DShape(topLeft, makeBottomRight(topLeft, side, side)){
-    if (std::isnan(side) || side <= 0) {
+    if (std::isnan(side)) {
         throw std::invalid_argument("Side must be a positive number.");
     }
     if (!std::isfinite(side)) {
@@ -64,8 +64,10 @@ double MySquare::getSide() const {
     return side;
 }
 
+// Square still buggy
 QGraphicsItem* MySquare::toQShape() const{
-    QGraphicsRectItem* square = new QGraphicsRectItem();
+    QGraphicsPathItem* square = new QGraphicsPathItem();
+    QPainterPath path;
     if (gridLineWidth > 0 && !getStrokeColor().empty()) {
         square->setPen(QPen(QColor::fromString(QString::fromStdString(getStrokeColor())), gridLineWidth));
     } else if (gridLineWidth <= 0 && !getStrokeColor().empty()){
@@ -80,10 +82,17 @@ QGraphicsItem* MySquare::toQShape() const{
         square->setBrush(QBrush(QColor::fromString(QString::fromStdString(getDefaultFillColor()))));
     }
 
-    square->setRect(getTopLeft()->getX(),
-                       getTopLeft()->getY(),
-                       side,
-                       side);
+    // Calculate actual top-left corner for correct drawing in all directions
+    double x1 = getTopLeft()->getX();
+    double y1 = getTopLeft()->getY();
+    double x2 = getBottomRight()->getX();
+    double y2 = getBottomRight()->getY();
+    
+    double actualX = std::min(x1, x2);
+    double actualY = std::min(y1, y2);
+    
+    path.addRect(actualX, actualY, side, side);
+    square->setPath(path);
 
     return square;
 }
